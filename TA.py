@@ -4,9 +4,14 @@ import torch
 from transformers import AutoTokenizer, AutoModel
 import torch.nn as nn
 
-# Load the tokenizer and model
-tokenizer = AutoTokenizer.from_pretrained("model/indobert_tokenizer")
-bert_model = AutoModel.from_pretrained("model/indobert_model")
+# Cache the model and tokenizer to avoid reloading
+@st.cache_resource
+def load_model_and_tokenizer():
+    tokenizer = AutoTokenizer.from_pretrained("model/indobert_tokenizer")
+    model = AutoModel.from_pretrained("model/indobert_model")
+    return tokenizer, model
+
+tokenizer, bert_model = load_model_and_tokenizer()
 
 # Define the function to get sentence embedding
 def get_sentence_embedding(text: str, max_sequence_length: int):
@@ -93,10 +98,14 @@ hidden_size = 256
 num_layers = 1
 num_classes = 39
 
+@st.cache_resource
+def load_news_model():
+    model = BiLSTM_Attention(input_size, hidden_size, num_layers, num_classes)
+    model.load_state_dict(torch.load("model/Hybrid_Hyper1.pth", map_location=torch.device('cpu')))
+    model.eval()
+    return model
 
-news_model = BiLSTM_Attention(input_size, hidden_size, num_layers, num_classes)
-news_model.load_state_dict(torch.load("model/Hybrid_Hyper1.pth"))
-news_model.eval()
+news_model = load_news_model()
 
 # Define the Streamlit app
 st.title("Multilabel Klasifikasi Teks Berita dengan Bi-LSTM, Attention, dan BERT")
@@ -157,4 +166,4 @@ if st.button("Klasifikasi"):
         st.write("Masukkan teks terlebih dahulu.")
 
 st.markdown("---")
-st.markdown("**Dibuat oleh Marsyavero Charisyah Putra untuk keperluan Tugas Akhir Institut Teknologi Sepuluh Nopember**")
+st.markdown("**Dibuat oleh Marsyavero Charisyah Putra**")
